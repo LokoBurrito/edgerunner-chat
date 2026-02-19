@@ -2,8 +2,6 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<!--===================================================================================-->
-<!-- Inline style to avoid an extra round trip before the page can render. -->
 <style type="text/css">
 * {
   box-sizing: border-box;
@@ -161,10 +159,6 @@ p:last-of-type {
 }
 
 </style>
-
-<!--===================================================================================-->
-<!-- The actual HTML. There is not much of it. -->
-
   </head>
   <body>
     <form id="name-form" action="/fake-form-action">
@@ -187,8 +181,6 @@ p:last-of-type {
     </form>
   </body>
 
-<!--===================================================================================-->
-<!-- Client-side JavaScript code for the app. -->
 
 <script type="text/javascript">
 let currentWebSocket = null;
@@ -203,16 +195,12 @@ let chatroom = document.querySelector("#chatroom");
 let chatlog = document.querySelector("#chatlog");
 let chatInput = document.querySelector("#chat-input");
 let roster = document.querySelector("#roster");
-
-// Is the chatlog scrolled to the bottom?
 let isAtBottom = true;
-
 let username;
 let roomname;
 
 let hostname = window.location.host;
 if (hostname == "") {
-  // Probably testing the HTML locally.
   hostname = "edge-chat-demo.cloudflareworkers.com";
 }
 
@@ -285,8 +273,6 @@ function startRoomChooser() {
 
 function startChat() {
   roomForm.remove();
-
-  // Normalize the room name a bit.
   roomname = roomname.replace(/[^a-zA-Z0-9_-]/g, "").replace(/_/g, "-").toLowerCase();
 
   if (roomname.length > 32 && !roomname.match(/^[0-9a-f]{64}$/)) {
@@ -319,7 +305,6 @@ function startChat() {
       currentWebSocket.send(JSON.stringify({message: chatInput.value}));
       chatInput.value = "";
 
-      // Scroll to bottom whenever sending a message.
       chatlog.scrollBy(0, 1e8);
     }
   });
@@ -336,14 +321,11 @@ function startChat() {
 
   chatInput.focus();
   document.body.addEventListener("click", event => {
-    // If the user clicked somewhere in the window without selecting any text, focus the chat
-    // input.
     if (window.getSelection().toString() == "") {
       chatInput.focus();
     }
   });
 
-  // Detect mobile keyboard appearing and disappearing, and adjust the scroll as appropriate.
   if('visualViewport' in window) {
     window.visualViewport.addEventListener('resize', function(event) {
       if (isAtBottom) {
@@ -359,7 +341,6 @@ let lastSeenTimestamp = 0;
 let wroteWelcomeMessages = false;
 
 function join() {
-  // If we are running via wrangler dev, use ws:
   const wss = document.location.protocol === "http:" ? "ws://" : "wss://";
   let ws = new WebSocket(wss + hostname + "/api/room/" + roomname + "/websocket");
   let rejoined = false;
@@ -370,27 +351,20 @@ function join() {
       rejoined = true;
       currentWebSocket = null;
 
-      // Clear the roster.
       while (roster.firstChild) {
         roster.removeChild(roster.firstChild);
       }
-
-      // Don't try to reconnect too rapidly.
       let timeSinceLastJoin = Date.now() - startTime;
       if (timeSinceLastJoin < 10000) {
-        // Less than 10 seconds elapsed since last join. Pause a bit.
         await new Promise(resolve => setTimeout(resolve, 10000 - timeSinceLastJoin));
       }
 
-      // OK, reconnect now!
       join();
     }
   }
 
   ws.addEventListener("open", event => {
     currentWebSocket = ws;
-
-    // Send user info message.
     ws.send(JSON.stringify({name: username}));
   });
 
@@ -411,7 +385,6 @@ function join() {
         }
       }
     } else if (data.ready) {
-      // All pre-join messages have been delivered.
       if (!wroteWelcomeMessages) {
         wroteWelcomeMessages = true;
         addChatMessage(null,
@@ -429,7 +402,6 @@ function join() {
         }
       }
     } else {
-      // A regular chat message.
       if (data.timestamp > lastSeenTimestamp) {
         addChatMessage(data.name, data.message);
         lastSeenTimestamp = data.timestamp;
@@ -457,9 +429,6 @@ function addChatMessage(name, text) {
   }
   p.appendChild(document.createTextNode(text));
 
-  // Append the new chat line, making sure that if the chatlog was scrolled to the bottom
-  // before, it remains scrolled to the bottom, and otherwise the scroll position doesn't
-  // change.
   chatlog.appendChild(p);
   if (isAtBottom) {
     chatlog.scrollBy(0, 1e8);
@@ -468,5 +437,4 @@ function addChatMessage(name, text) {
 
 startNameChooser();
 </script>
-<!--===================================================================================-->
 </html>
